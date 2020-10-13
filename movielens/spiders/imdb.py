@@ -27,7 +27,7 @@ class ImdbSpider(Spider):
     def start_requests(self):
         df = pd.read_csv('links.csv')
         for index, row in df.iterrows():
-            imdb_id = str(row['imbdId'])
+            imdb_id = str(row['imdbId'])
             yield Request(
                 url=BASE_URL.format(imdb_id),
                 cb_kwargs=dict(imdb_id=imdb_id)
