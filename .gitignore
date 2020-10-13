@@ -10,3 +10,4 @@ __pycache__/
 .virtualenvs/
 *.pkl
 *.swp
+cast.csv
