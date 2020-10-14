@@ -23,8 +23,12 @@ class ImdbSpider(Spider):
     }
 
     def start_requests(self):
+        dtype = {
+            'movieId': 'int',
+            'imdbId': 'str',
+            'tmdbId': 'int'
+        }
         df = pd.read_csv('links.csv')
-        df['imdbId'] = df['imdbId'].astype(str)
         for index, row in df.iterrows():
             imdb_id = row['imdbId']
             yield Request(
@@ -37,6 +41,6 @@ class ImdbSpider(Spider):
         cast_elements = response.xpath(CAST_XPATH)
         yield {
             'imdb_id': imdb_id,
-            'story_line': story_line_element.get().strip().replace('"',"'"),
+            'story_line': story_line_element.get().strip().replace('"', "'"),
             'cast': '|'.join([a.get().strip() for a in cast_elements])
         }
