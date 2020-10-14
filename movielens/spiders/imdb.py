@@ -38,6 +38,6 @@ class ImdbSpider(Spider):
         cast_elements = response.xpath(CAST_XPATH)
         yield {
             'imdb_id': imdb_id,
-            'story_line': story_line_element.get().strip(),
+            'story_line': story_line_element.get().strip().replace('"',"'"),
             'cast': '|'.join([a.get().strip() for a in cast_elements])
         }
