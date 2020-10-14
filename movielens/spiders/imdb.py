@@ -26,9 +26,9 @@ class ImdbSpider(Spider):
         dtype = {
             'movieId': 'int',
             'imdbId': 'str',
-            'tmdbId': 'int'
+            'tmdbId': 'str'
         }
-        df = pd.read_csv('links.csv')
+        df = pd.read_csv('links.csv', dtype=dtype)
         for index, row in df.iterrows():
             imdb_id = row['imdbId']
             yield Request(
