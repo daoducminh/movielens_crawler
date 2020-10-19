@@ -39,8 +39,9 @@ class ImdbSpider(Spider):
     def parse(self, response: Response, imdb_id):
         story_line_element = response.xpath(STORY_LINE_XPATH)
         cast_elements = response.xpath(CAST_XPATH)
+        cast = '|'.join([a.get().strip() for a in cast_elements])
         yield {
             'imdb_id': imdb_id,
             'story_line': story_line_element.get().strip().replace('"', "'"),
-            'cast': '|'.join([a.get().strip() for a in cast_elements])
+            'cast': '"{}""'.format(cast)
         }
