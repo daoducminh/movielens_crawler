@@ -43,5 +43,5 @@ class ImdbSpider(Spider):
         yield {
             'imdb_id': imdb_id,
             'story_line': story_line_element.get().strip().replace('"', "'"),
-            'cast': '"{}""'.format(cast)
+            'cast': '"{}"'.format(cast)
         }
