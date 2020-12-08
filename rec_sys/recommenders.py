@@ -6,17 +6,15 @@ from sklearn.neighbors import NearestNeighbors
 
 
 class UserBasedCFRecommender:
-    def __init__(self, dataset_handler, neighbours_to_predict=5):
+    def __init__(self, dataset_handler, train_set, neighbours_to_predict=5):
         self.dataset_handler = dataset_handler
         self.movies_vectors = self.dataset_handler.load_movies()
         self.movies_ids = set(self.dataset_handler.id_to_title.keys())
         self.neighbours_to_predict = neighbours_to_predict
-
-    def train(self, train_set):
         self.users_ratings = train_set
         self.users_profiles, self.user_id_to_profile_index = self._create_users_profiles(
             train_set)
-        self.movies_watchers = self._get_movies_watchers(train_set)
+        self.movies_watchers = self._get_movies_watchers()
         self.nbrs = NearestNeighbors(metric='cosine', algorithm='brute')
 
     def top(self, user_profile, top_n):
@@ -32,7 +30,7 @@ class UserBasedCFRecommender:
                 [[watcher], self.users_profiles[self.user_id_to_profile_index[watcher]][0]])
             for watcher in self.movies_watchers[movie_id]
         ])
-        nearest_neighbours = self._cosineKNN(
+        nearest_neighbours = self._cosine_knn(
             user_profile, profiles_with_ids, self.neighbours_to_predict)
         if not nearest_neighbours:
             return 0.0
@@ -75,9 +73,9 @@ class UserBasedCFRecommender:
                 self.dataset_handler.movie_vector2genres(movie_vector)
             ))
 
-    def _get_movies_watchers(self, users_ratings):
+    def _get_movies_watchers(self):
         movies_watchers = defaultdict(list)
-        for (user, user_ratings) in users_ratings.items():
+        for (user, user_ratings) in self.users_ratings.items():
             for movie_id in user_ratings.keys():
                 movies_watchers[movie_id].append(user)
         return movies_watchers
@@ -90,7 +88,7 @@ class UserBasedCFRecommender:
             user_id_to_profile_index[user] = i
         return users_profiles, user_id_to_profile_index
 
-    def _cosineKNN(self, user_profile, profiles_with_ids, k, treshold=20):
+    def _cosine_knn(self, user_profile, profiles_with_ids, k, treshold=20):
         if profiles_with_ids.shape[0] < treshold:
             return []
         self.nbrs.fit(profiles_with_ids[:, 1:])
@@ -104,51 +102,13 @@ class UserBasedCFRecommender:
         ]
 
 
-class UserBasedCFWithClusteringRecommender(UserBasedCFRecommender):
-    def __init__(self, dataset_handler, neighbours_to_predict=5, clusters=10):
-        super().__init__(dataset_handler, neighbours_to_predict)
-        self.clusters = clusters
-
-    def train(self, train_set):
-        self.users_ratings = train_set
-        self.users_profiles, self.user_id_to_profile_index = self._create_users_profiles(
-            train_set)
-        self.kmeans = KMeans(n_clusters=self.clusters).fit(
-            np.array([profile for (profile, _) in self.users_profiles])
-        )
-        self.movies_watchers = self._get_movies_watchers(train_set)
-        self.nbrs = NearestNeighbors(metric='cosine', algorithm='brute')
-
-    def predict_rating(self, user_profile, movie_id):
-        nearest_group = self.kmeans.predict(np.array([user_profile[0]]))[0]
-        profiles_with_ids = np.array([
-            np.hstack(
-                [[watcher], self.users_profiles[self.user_id_to_profile_index[watcher]][0]])
-            for watcher in self.movies_watchers[movie_id]
-            if self.kmeans.labels_[self.user_id_to_profile_index[watcher]] == nearest_group
-        ])
-        nearest_neighbours = self._cosineKNN(
-            user_profile, profiles_with_ids, self.neighbours_to_predict)
-        if not nearest_neighbours:
-            return 0.0
-        return np.average([self.users_ratings[neighbour][movie_id] for neighbour in nearest_neighbours])
-
-
 class ContentBasedCFRecommender:
     def __init__(self, dataset_handler):
         self.dataset_handler = dataset_handler
         self.movies_vectors = self.dataset_handler.load_movies()
 
-    def train(self, train_set):
-        pass
-
     def top(self, user_profile, top_n):
         return self._cosine_knn_all_movies(user_profile[0], top_n)
-
-    def predict_rating(self, user_profile, movie_id):
-        nearest_watched_movies = self._cosine_knn_movies_subset(
-            user_profile[1].keys(), movie_id, 5)
-        return np.average(np.array([user_profile[1][movie] for movie in nearest_watched_movies]))
 
     def create_user_profile(self, user_ratings):
         return (
@@ -190,18 +150,3 @@ class ContentBasedCFRecommender:
         nbrs = NearestNeighbors(metric='cosine', algorithm='brute')
         nbrs.fit(self.movies_vectors)
         return self.dataset_handler.indices2ids(nbrs.kneighbors(np.array([user_profile]), k, return_distance=False)[0])
-
-    def _cosine_knn_movies_subset(self, movies_subset, movie_id, k):
-        nbrs = NearestNeighbors(k, metric='cosine', algorithm='brute')
-        movies_with_ids = np.array([
-            np.hstack(
-                [[watched_movie], self.movies_vectors[self.dataset_handler.id2index(watched_movie)]])
-            for watched_movie in movies_subset
-        ])
-        nbrs.fit(movies_with_ids[:, 1:])
-        return movies_with_ids[
-            nbrs.kneighbors(
-                np.array([self.movies_vectors[self.dataset_handler.id2index(movie_id)]]), return_distance=False
-            )[0],
-            0
-        ]
