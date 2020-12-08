@@ -5,7 +5,7 @@ from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
 
 
-class CollaborativeFilteringRecommender:
+class UserBasedCFRecommender:
     def __init__(self, dataset_handler, neighbours_to_predict=5):
         self.dataset_handler = dataset_handler
         self.movies_vectors = self.dataset_handler.load_movies()
@@ -46,7 +46,7 @@ class CollaborativeFilteringRecommender:
                     movie)] * np.sign(rating - mid_rating)
                 for (movie, rating) in user_ratings.items()
             ]),
-            weights=(mid_rating - np.array(user_ratings.values())) ** 2,
+            weights=(np.array(list(user_ratings.values())) - mid_rating) ** 2,
             axis=0
         )
         watched_movies = set(user_ratings.keys())
@@ -96,15 +96,17 @@ class CollaborativeFilteringRecommender:
         self.nbrs.fit(profiles_with_ids[:, 1:])
         return [
             profiles_with_ids[i, 0]
-            for i in self.nbrs.kneighbors(np.array([user_profile[0]]), n_neighbors=min(k, len(profiles_with_ids)),
-                                          return_distance=False)[0]
+            for i in self.nbrs.kneighbors(
+                np.array([user_profile[0]]),
+                n_neighbors=min(k, len(profiles_with_ids)),
+                return_distance=False
+            )[0]
         ]
 
 
-class CollaborativeFilteringWithClusteringRecommender(CollaborativeFilteringRecommender):
+class UserBasedCFWithClusteringRecommender(UserBasedCFRecommender):
     def __init__(self, dataset_handler, neighbours_to_predict=5, clusters=10):
-        super(CollaborativeFilteringWithClusteringRecommender,
-              self).__init__(dataset_handler, neighbours_to_predict)
+        super().__init__(dataset_handler, neighbours_to_predict)
         self.clusters = clusters
 
     def train(self, train_set):
@@ -112,7 +114,8 @@ class CollaborativeFilteringWithClusteringRecommender(CollaborativeFilteringReco
         self.users_profiles, self.user_id_to_profile_index = self._create_users_profiles(
             train_set)
         self.kmeans = KMeans(n_clusters=self.clusters).fit(
-            np.array([profile for (profile, _) in self.users_profiles]))
+            np.array([profile for (profile, _) in self.users_profiles])
+        )
         self.movies_watchers = self._get_movies_watchers(train_set)
         self.nbrs = NearestNeighbors(metric='cosine', algorithm='brute')
 
@@ -131,7 +134,7 @@ class CollaborativeFilteringWithClusteringRecommender(CollaborativeFilteringReco
         return np.average([self.users_ratings[neighbour][movie_id] for neighbour in nearest_neighbours])
 
 
-class ContentBasedRecommender:
+class ContentBasedCFRecommender:
     def __init__(self, dataset_handler):
         self.dataset_handler = dataset_handler
         self.movies_vectors = self.dataset_handler.load_movies()
@@ -154,7 +157,7 @@ class ContentBasedRecommender:
                     self.movies_vectors[self.dataset_handler.id2index(movie)]
                     for (movie, rating) in user_ratings.items()
                 ]),
-                weights=np.array(user_ratings.values()),
+                weights=np.array(list(user_ratings.values())),
                 axis=0
             ),
             user_ratings

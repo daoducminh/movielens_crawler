@@ -3,6 +3,7 @@ from random import shuffle
 
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 
 genres = (
     "Action",
@@ -47,10 +48,7 @@ class DatasetHandler(object):
 
     def load_movies(self):
         movies_frame = pd.read_csv(
-            os.path.join(self.dataset_path, "movies.dat"),
-            names=["movieId", "title", "genres"],
-            sep="::",
-            engine="python"
+            os.path.join(self.dataset_path, "movies.csv")
         )
         self.id_to_title = {}
         self.movie_index_to_movie_id = []
@@ -66,10 +64,7 @@ class DatasetHandler(object):
 
     def load_users_ratings(self):
         ratings_frame = pd.read_csv(
-            os.path.join(self.dataset_path, "ratings.dat"),
-            names=["userId", "movieId", "rating", "timestamp"],
-            sep="::",
-            engine="python"
+            os.path.join(self.dataset_path, "ratings.csv")
         )
         users_ratings = {}
         for _, row in ratings_frame.iterrows():
@@ -122,13 +117,17 @@ class Evaluator(object):
         rse = 0.0
         total = 0
         users_ratings = self.recommender.dataset_handler.load_users_ratings()
-        training_data = {user: user_ratings for user, user_ratings in users_ratings.items(
-        ) if user < 0.8*len(users_ratings)}
-        test_data = {user: user_ratings for user,
-                     user_ratings in users_ratings.items() if user not in training_data}
+        s = pd.Series(users_ratings)
+        training_data, test_data = [i.to_dict()
+                                    for i in train_test_split(s, train_size=0.8)]
+
+        # training_data = {user: user_ratings for user, user_ratings in users_ratings.items(
+        # ) if user < 0.8*len(users_ratings)}
+        # test_data = {user: user_ratings for user,
+        #              user_ratings in users_ratings.items() if user not in training_data}
         self.recommender.train(training_data)
         for user_ratings in test_data.values():
-            user_items = user_ratings.items()
+            user_items = list(user_ratings.items())
             shuffle(user_items)
             parts = [
                 user_items[k*(len(user_items)/k_cross):(k+1)*(len(user_items) /
