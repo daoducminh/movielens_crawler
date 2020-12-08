@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
@@ -74,7 +72,7 @@ class UserBasedCFRecommender:
             ))
 
     def _get_movies_watchers(self):
-        movies_watchers = defaultdict(list)
+        movies_watchers = {}
         for (user, user_ratings) in self.users_ratings.items():
             for movie_id in user_ratings.keys():
                 movies_watchers[movie_id].append(user)
