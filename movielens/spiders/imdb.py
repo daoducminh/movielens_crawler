@@ -7,6 +7,7 @@ import pandas as pd
 BASE_URL = 'http://www.imdb.com/title/tt{}/'
 STORY_LINE_XPATH = '//div[@id="titleStoryLine"]/div[1]/p/span/text()'
 CAST_XPATH = '//div[@id="titleCast"]/table/tr[@class]/td[not(@class)]/a/text()'
+LINK_DATA = 'data/ml-25m/links.csv'
 
 
 class ImdbSpider(Spider):
@@ -28,7 +29,7 @@ class ImdbSpider(Spider):
             'imdbId': 'str',
             'tmdbId': 'str'
         }
-        df = pd.read_csv('links.csv', dtype=dtype)
+        df = pd.read_csv(LINK_DATA, dtype=dtype)
         for index, row in df.iterrows():
             imdb_id = row['imdbId']
             yield Request(

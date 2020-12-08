@@ -25,6 +25,9 @@ setup(
         'rope',
         'python-dotenv',
         'dnspython',
-        'pandas'
+        'pandas',
+        'numpy',
+        'matplotlib',
+        'scikit-learn'
     ]
 )
