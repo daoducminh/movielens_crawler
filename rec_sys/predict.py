@@ -33,4 +33,4 @@ def content_based_cf(dataset_handler):
 if __name__ == '__main__':
     dataset = DatasetHandler(DATESET_SMALL)
     user_based_cf(dataset)
-    content_based_cf(dataset)
+    # content_based_cf(dataset)

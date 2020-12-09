@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
+from collections import defaultdict
 
 
 class UserBasedCFRecommender:
@@ -24,8 +25,10 @@ class UserBasedCFRecommender:
 
     def predict_rating(self, user_profile, movie_id):
         profiles_with_ids = np.array([
-            np.hstack(
-                [[watcher], self.users_profiles[self.user_id_to_profile_index[watcher]][0]])
+            np.hstack([
+                [watcher],
+                self.users_profiles[self.user_id_to_profile_index[watcher]][0]
+            ])
             for watcher in self.movies_watchers[movie_id]
         ])
         nearest_neighbours = self._cosine_knn(
@@ -36,15 +39,16 @@ class UserBasedCFRecommender:
 
     def create_user_profile(self, user_ratings):
         mid_rating = 2.75
-        profile = np.average(
-            np.array([
-                self.movies_vectors[self.dataset_handler.id2index(
-                    movie)] * np.sign(rating - mid_rating)
-                for (movie, rating) in user_ratings.items()
-            ]),
-            weights=(np.array(list(user_ratings.values())) - mid_rating) ** 2,
-            axis=0
-        )
+        # profile = np.average(
+        #     np.array([
+        #         self.movies_vectors[self.dataset_handler.id2index(
+        #             movie)] * np.sign(rating - mid_rating)
+        #         for (movie, rating) in user_ratings.items()
+        #     ]),
+        #     weights=(np.array(list(user_ratings.values())) - mid_rating) ** 2,
+        #     axis=0
+        # )
+        profile = np.array(list(user_ratings.values()))
         watched_movies = set(user_ratings.keys())
         return (profile, watched_movies)
 
@@ -72,7 +76,7 @@ class UserBasedCFRecommender:
             ))
 
     def _get_movies_watchers(self):
-        movies_watchers = {}
+        movies_watchers = defaultdict(list)
         for (user, user_ratings) in self.users_ratings.items():
             for movie_id in user_ratings.keys():
                 movies_watchers[movie_id].append(user)
@@ -86,8 +90,8 @@ class UserBasedCFRecommender:
             user_id_to_profile_index[user] = i
         return users_profiles, user_id_to_profile_index
 
-    def _cosine_knn(self, user_profile, profiles_with_ids, k, treshold=20):
-        if profiles_with_ids.shape[0] < treshold:
+    def _cosine_knn(self, user_profile, profiles_with_ids, k, threshold=20):
+        if profiles_with_ids.shape[0] < threshold:
             return []
         self.nbrs.fit(profiles_with_ids[:, 1:])
         return [
