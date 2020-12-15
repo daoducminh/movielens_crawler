@@ -7,4 +7,5 @@ for i in "${arr[@]}"
 do
    wget "http://files.grouplens.org/datasets/movielens/$i.zip"
    unzip "$i.zip" && rm "$i.zip"
+   mv "$i" data/
 done
