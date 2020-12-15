@@ -4,7 +4,7 @@ from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
 from collections import defaultdict
 from sklearn.metrics.pairwise import cosine_similarity
-from rec_sys.helper import Dataset, merge_df_on_index, merge_df_on_movie_id
+from rec_sys.helper import Dataset, merge_df_on_index, merge_df_on_movie_id, get_dummies_from_genre
 
 
 class UserBasedCFRecommender:
@@ -161,23 +161,31 @@ class ContentBasedCFRecommender:
 class ContentBasedRecommender:
     def __init__(self, dataset: Dataset):
         self.dataset = dataset
-        self.movie_df = self.dataset.load_df('movies')
-        self.tag_df = self.dataset.load_df('tags1')
+        self.movie_df = self.dataset.load_df('movies').set_index('movieId')
+        self.genre_df = get_dummies_from_genre(self.movie_df)
+        self.tag_df = self.dataset.load_df('tags1').set_index('movieId')
 
-    def top_cos_tag(self, movie_id, top_n):
-        if not movie_id in self.tag_df['movieId'].values:
+    def top_cos_tag(self, movie_id, top_n, tag_weight=1, genre_weight=1):
+        if movie_id in self.tag_df.index:
+            tg_df = merge_df_on_index(self.tag_df, self.genre_df)
+            df = merge_df_on_index(tg_df, self.movie_df)[['title']]
+            id_series = tg_df.index
+
+            tag_vec_df = self.tag_df.replace(np.NaN, 0).mul(tag_weight)
+            genre_vec_df = self.genre_df.replace(np.NaN, 0).mul(genre_weight)
+            vector_df = merge_df_on_index(tag_vec_df, genre_vec_df)
+
+            x_array = vector_df.loc[movie_id].to_numpy()
+            y_array = vector_df.to_numpy()
+
+            t = cosine_similarity(x_array.reshape(1, -1), y_array)
+            cosine_df = pd.DataFrame(
+                {'movieId': id_series, 'cos': t[0]}
+            ).set_index('movieId')
+
+            movie_cos_df = merge_df_on_index(df, cosine_df)
+            movie_cos_df = movie_cos_df.drop(index=movie_id).sort_values(
+                'cos', ascending=False)
+            return movie_cos_df.values[:top_n]
+        else:
             return []
-        id_df = self.tag_df['movieId']
-        tag_only_df = self.tag_df.drop('movieId', 1).replace(np.NaN, 0)
-        movie_index = self.tag_df.index[self.tag_df['movieId'] == movie_id]
-        x_array = tag_only_df.iloc[movie_index].to_numpy()
-        y_array = tag_only_df.to_numpy()
-
-        t = cosine_similarity(x_array.reshape(1, -1), y_array)
-        cosine_df = pd.DataFrame({'cos': t[0]})
-        movie_id_cos_df = merge_df_on_index(
-            id_df, cosine_df)
-        movie_cos_df = merge_df_on_movie_id(self.movie_df, movie_id_cos_df)
-        movie_cos_df = movie_cos_df[movie_cos_df['movieId'] != movie_id].sort_values(
-            'cos', ascending=False)
-        return movie_cos_df.values[:top_n]

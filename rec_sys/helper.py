@@ -6,6 +6,14 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
+def merge_df_on_movie_id(df1, df2):
+    return pd.merge(df1, df2, left_on='movieId', right_on='movieId')
+
+
+def merge_df_on_index(df1, df2):
+    return pd.merge(df1, df2, left_index=True, right_index=True)
+
+
 def convert_ratings(filename):
     with open(filename, 'r') as csv_file:
         rs = {}
@@ -49,17 +57,15 @@ def tag_to_df(data):
         a.reset_index(level=0, inplace=True)
         a.rename(columns={'index': 'movieId'}, inplace=True)
         a1 = a['tag'].str.get_dummies(sep=';')
-        a = pd.merge(a, a1, left_index=True, right_index=True)
+        a = merge_df_on_index(a, a1)
+        rs = rs.append(a)
         del a
-    return rs.sort_values(by='movieId').reset_index(drop=True)
+    return rs.drop('tag', 1).sort_values(by='movieId').reset_index(drop=True)
 
 
-def merge_df_on_movie_id(df1, df2):
-    return pd.merge(df1, df2, left_on='movieId', right_on='movieId')
-
-
-def merge_df_on_index(df1, df2):
-    return pd.merge(df1, df2, left_index=True, right_index=True)
+def get_dummies_from_genre(df):
+    g = df['genres'].str.get_dummies(sep='|')
+    return merge_df_on_index(df, g).drop('genres', 1).drop('title', 1)
 
 
 class Dataset:

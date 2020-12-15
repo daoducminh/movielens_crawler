@@ -21,13 +21,12 @@ DATESET_SMALL = 'data/ml-latest-small'
 #     recommender.present_recommendations(top)
 
 
-def content_based_cf(dataset, movie_id):
+def content_based_on_tags(dataset, movie_id):
     recommender = ContentBasedRecommender(dataset)
-    top = recommender.top_cos_tag(movie_id, top_n=10)
-    print(top)
+    return recommender.top_cos_tag(movie_id, top_n=10)
 
 
 if __name__ == '__main__':
     data = Dataset(DATESET_SMALL)
     # user_based_cf(data, 1)
-    content_based_cf(data, 3)
+    print(content_based_on_tags(data, 2))
