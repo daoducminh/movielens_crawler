@@ -1,16 +1,18 @@
+import random
+
+from rec_sys.helper import Dataset
 from rec_sys.recommenders import UserBasedCFRecommender, ContentBasedRecommender
-from rec_sys.helper import Dataset, df_to_tag
 
-DATESET_1M = 'ml-1m'
 DATESET_SMALL = 'data/ml-latest-small'
+SCORES = [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
 
 
-def user_based_cf(dataset, user_ratings, movie_id, top_n=10, k_neighbor=20):
+def user_based_cf(dataset, user_ratings, top_n=10, k_neighbor=20):
     if len(user_ratings) < 10:
-        return content_based_on_tags(dataset, movie_id)
+        return []
     else:
         recommender = UserBasedCFRecommender(dataset)
-        return recommender.top_movies(user_ratings, movie_id)
+        return recommender.top_movies(user_ratings, top_n, k_neighbor)
 
 
 def content_based_on_tags(dataset, movie_id):
@@ -20,20 +22,11 @@ def content_based_on_tags(dataset, movie_id):
 
 if __name__ == '__main__':
     data = Dataset(DATESET_SMALL, 'csv', ',')
-    # a = df_to_tag(data.load_df('tags'))
-    a = (content_based_on_tags(data, 2))
-    print(a)
-    rate = {
-        2: 3.5,
-        3: 4.5,
-        4: 5.0,
-        5: 1.0,
-        6: 0.5,
-        7: 1.5,
-        8: 2.0,
-        9: 2.5,
-        10: 3.0,
-        11: 4.0,
-        12: 4.0
-    }
-    print(user_based_cf(data, rate, 1))
+    # Content based
+    print(content_based_on_tags(data, movie_id=2))
+    # User based
+    movies = list(data.load_df('movies').loc[:, 'movieId'])
+    rate = {}
+    for i in range(5000):
+        rate[movies[i]] = SCORES[random.randrange(0, len(SCORES), 1)]
+    print(user_based_cf(data, rate, top_n=10, k_neighbor=50))
