@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare -a arr=("ml-1m" "ml-latest-small" "ml-25m")
+declare -a arr=("ml-latest-small" "ml-1m" "ml-latest")
 
 # now loop through the above array
 for i in "${arr[@]}"
