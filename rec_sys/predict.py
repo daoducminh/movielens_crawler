@@ -13,6 +13,7 @@ def user_based_cf(dataset, user_ratings, top_n=10, k_neighbor=20):
     else:
         recommender = UserBasedCFRecommender(dataset)
         return recommender.top_movies(user_ratings, top_n, k_neighbor)
+        # return recommender.mae(user_ratings, k_neighbor)
 
 
 def content_based_on_tags(dataset, movie_id):
@@ -23,7 +24,7 @@ def content_based_on_tags(dataset, movie_id):
 if __name__ == '__main__':
     data = Dataset(DATESET_SMALL, 'csv', ',')
     # Content based
-    print(content_based_on_tags(data, movie_id=2))
+    # print(content_based_on_tags(data, movie_id=246))
     # User based
     movies = list(data.load_df('movies').loc[:, 'movieId'])
     rate = {}
