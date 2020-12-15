@@ -34,7 +34,11 @@ class UserBasedCFRecommender(Recommender):
             user_id: user_ratings
         }
         ur_df = pd.DataFrame.from_dict(ur_d, orient='index')
-        rating_df = self.rating_df.append(ur_df).replace(0, np.NaN)
+        # rating_df = self.rating_df[ur_df]
+        rating_df = pd.concat(
+            [ur_df, self.rating_df[ur_df.columns.intersection(
+                self.rating_df.columns)]]
+        ).sort_index()
 
         avg = rating_df.mean(axis=1)
         n_rating_df = rating_df.replace(0, np.NaN).subtract(avg, axis=0)
@@ -78,10 +82,14 @@ class UserBasedCFRecommender(Recommender):
             user_id: user_ratings
         }
         ur_df = pd.DataFrame.from_dict(ur_d, orient='index')
-        rating_df = self.rating_df.append(ur_df).replace(0, np.NaN)
+        # rating_df = self.rating_df[ur_df]
+        rating_df = pd.concat(
+            [ur_df, self.rating_df[ur_df.columns.intersection(
+                self.rating_df.columns)]]
+        ).sort_index()
 
         avg = rating_df.mean(axis=1)
-        n_rating_df = rating_df.subtract(avg, axis=0)
+        n_rating_df = rating_df.replace(0, np.NaN).subtract(avg, axis=0)
         n1_rating_df = n_rating_df.replace(np.NaN, 0)
         x_array = n1_rating_df.loc[user_id, :].to_numpy()
         y_array = n1_rating_df.loc[:user_id - 1, :].to_numpy()

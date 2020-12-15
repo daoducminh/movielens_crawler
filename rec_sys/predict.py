@@ -28,6 +28,6 @@ if __name__ == '__main__':
     # User based
     movies = list(data.load_df('movies').loc[:, 'movieId'])
     rate = {}
-    for i in range(5000):
+    for i in range(50):
         rate[movies[i]] = SCORES[random.randrange(0, len(SCORES), 1)]
     print(user_based_cf(data, rate, top_n=10, k_neighbor=50))
